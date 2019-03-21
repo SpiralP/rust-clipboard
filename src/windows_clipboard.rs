@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-use clipboard_win::{get_clipboard_string, set_clipboard_string};
+use clipboard_win::Clipboard;
 
 use common::ClipboardProvider;
 use std::error::Error;
@@ -25,10 +25,23 @@ impl ClipboardProvider for WindowsClipboardContext {
     fn new() -> Result<Self, Box<Error>> {
         Ok(WindowsClipboardContext)
     }
-    fn get_contents(&mut self) -> Result<String, Box<Error>> {
-        Ok(get_clipboard_string()?)
+    fn get_contents(&mut self) -> Result<Vec<u8>, Box<Error>> {
+        let clipboard = Clipboard::new()?;
+        Ok(vec![])
     }
-    fn set_contents(&mut self, data: String) -> Result<(), Box<Error>> {
-        Ok(set_clipboard_string(&data)?)
+    fn set_contents(&mut self, data: &[u8]) -> Result<(), Box<Error>> {
+        Ok(())
+    }
+}
+
+#[test]
+fn test_bap() {
+    let clipboard = Clipboard::new().unwrap();
+
+    let mut buffer = [0; 1024];
+    for i in (0..100000) {
+        if let Ok(byte_count) = clipboard.get(i, &mut buffer) {
+            println!("{} {}", i, byte_count);
+        }
     }
 }

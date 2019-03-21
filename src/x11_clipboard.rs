@@ -18,7 +18,7 @@ use common::*;
 use std::error::Error;
 use std::marker::PhantomData;
 use std::time::Duration;
-use x11_clipboard_crate::xcb::xproto::Atom;
+use x11_clipboard_crate::xcb::{self, xproto::Atom};
 use x11_clipboard_crate::Atoms;
 use x11_clipboard_crate::Clipboard as X11Clipboard;
 
@@ -54,20 +54,26 @@ where
         Ok(X11ClipboardContext(X11Clipboard::new()?, PhantomData))
     }
 
-    fn get_contents(&mut self) -> Result<String, Box<Error>> {
-        Ok(String::from_utf8(self.0.load(
+    fn get_contents(&mut self, mime_type: &str) -> Result<Vec<u8>, Box<Error>> {
+        let mime_type_atom = xcb::intern_atom(&self.0.getter.connection, false, mime_type)
+            .get_reply()
+            .map(|reply| reply.atom())?;
+
+        Ok(self.0.load(
             S::atom(&self.0.getter.atoms),
-            self.0.getter.atoms.utf8_string,
+            mime_type_atom,
             self.0.getter.atoms.property,
-            Duration::from_secs(3),
-        )?)?)
+            Duration::from_millis(100),
+        )?)
     }
 
-    fn set_contents(&mut self, data: String) -> Result<(), Box<Error>> {
-        Ok(self.0.store(
-            S::atom(&self.0.setter.atoms),
-            self.0.setter.atoms.utf8_string,
-            data,
-        )?)
+    fn set_contents(&mut self, mime_type: &str, data: &[u8]) -> Result<(), Box<Error>> {
+        let mime_type_atom = xcb::intern_atom(&self.0.setter.connection, false, mime_type)
+            .get_reply()
+            .map(|reply| reply.atom())?;
+
+        Ok(self
+            .0
+            .store(S::atom(&self.0.setter.atoms), mime_type_atom, data)?)
     }
 }

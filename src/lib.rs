@@ -74,8 +74,14 @@ pub type ClipboardContext = nop_clipboard::NopClipboardContext; // TODO: impleme
 pub type ClipboardContext = nop_clipboard::NopClipboardContext;
 
 #[test]
-fn test_clipboard() {
+fn test_clipboard_set() {
     let mut ctx = ClipboardContext::new().unwrap();
-    ctx.set_contents("some string".to_owned()).unwrap();
-    assert!(ctx.get_contents().unwrap() == "some string");
+    ctx.set_contents("UTF8_STRING", b"some string").unwrap();
+    assert!(ctx.get_contents("UTF8_STRING").unwrap() == b"some string");
+}
+
+#[test]
+fn test_clipboard_get() {
+    let mut ctx = ClipboardContext::new().unwrap();
+    println!("{:?}", ctx.get_contents("image/png").unwrap());
 }
